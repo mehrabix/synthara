@@ -9,10 +9,10 @@ import asyncio
 
 import streamlit as st
 
+from synthara.agents.orchestrator import Orchestrator
 from synthara.core.config import load_config
 from synthara.core.llm import LLMClient
 from synthara.memory.store import MemoryStore
-from synthara.agents.orchestrator import Orchestrator
 from synthara.ui.cli import CLIRenderer
 
 st.set_page_config(
@@ -70,7 +70,11 @@ with col1:
 
 with col2:
     st.header("Status")
-    st.info("Model: " + config.llm.models[0])
+    provider_list = list(config.llm.providers.keys())
+    provider_label = ", ".join(provider_list[:3])
+    if len(provider_list) > 3:
+        provider_label += "..."
+    st.info(f"Providers: {provider_label}")
     st.info("Agents: Planner → Researcher → Writer → Editor")
 
 memory.close()

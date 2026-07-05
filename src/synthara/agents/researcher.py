@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 from synthara.agents.base import Agent
 from synthara.core.llm import LLMClient
@@ -15,7 +15,12 @@ class ResearcherAgent(Agent):
         self.max_sources = max_sources
 
     def system_prompt(self) -> str:
-        return """You are a research analyst. Given a question and search results, produce a concise, factual summary covering the key points. Cite sources by index [1], [2], etc. Be objective and note any conflicting information."""
+        return (
+            "You are a research analyst. Given a question and search results, "
+            "produce a concise, factual summary covering the key points. "
+            "Cite sources by index [1], [2], etc. "
+            "Be objective and note any conflicting information."
+        )
 
     async def research(self, sub_question: str) -> ResearchFindings:
         sources = await self._search(sub_question)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from synthara.core.config import AppConfig
-from synthara.core.models import ResearchFindings, Source
+from synthara.core.models import ResearchFindings
 
 
 class MockLLM:
@@ -17,7 +17,8 @@ class MockLLM:
         return response
 
 
-def test_planner_parses_sub_questions():
+@pytest.mark.asyncio
+async def test_planner_parses_sub_questions():
     from synthara.agents.planner import PlannerAgent
 
     mock_llm = MockLLM(responses=[
@@ -27,7 +28,7 @@ def test_planner_parses_sub_questions():
     ])
     config = AppConfig()
     agent = PlannerAgent("planner", config.agents.planner_model, mock_llm)
-    questions = agent.plan("Quantum computing")
+    questions = await agent.plan("Quantum computing")
     assert len(questions) == 3
     assert "breakthroughs" in questions[0].lower()
 

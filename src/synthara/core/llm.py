@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-from typing import Any, AsyncIterator
+from typing import Any
 
 import httpx
 
@@ -18,14 +17,18 @@ class ProviderClient:
     def __init__(self, name: str, config: ProviderConfig, timeout: int = 60):
         self.name = name
         self.config = config
+        base_url = config.resolve_base_url().rstrip("/")
         self._client = httpx.AsyncClient(
-            base_url=config.resolve_base_url(),
+            base_url=base_url,
             headers={
                 "Authorization": f"Bearer {config.api_key}",
                 "Content-Type": "application/json",
             },
             timeout=timeout,
         )
+        # Providers have different path prefixes; store the chat endpoint
+        # relative to base_url. Default: append /chat/completions
+        self._chat_path = "/chat/completions"
 
     async def chat(
         self,
@@ -42,10 +45,15 @@ class ProviderClient:
             "max_tokens": max_tokens,
             **kwargs,
         }
-        response = await self._client.post("/v1/chat/completions", json=payload)
+        url = self._get_chat_url()
+        response = await self._client.post(url, json=payload)
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]["content"]
+
+    def _get_chat_url(self) -> str:
+        """Build the full chat completions URL relative to base_url."""
+        return self._chat_path
 
     async def close(self):
         await self._client.aclose()
@@ -54,8 +62,8 @@ class ProviderClient:
 class MultiProviderRouter:
     """Routes requests across multiple providers with automatic failover.
 
-    Tries providers in priority order. On 429 / timeout / server error,
-    falls back to the next available provider seamlessly.
+    Tries providers in priority order with model cycling on 429.
+    Falls back to next provider when all models of current are exhausted.
     """
 
     def __init__(self, config: AppConfig):
@@ -80,7 +88,9 @@ class MultiProviderRouter:
 
     def _resolve_model(self, model_spec: str) -> tuple[str, str | None]:
         """If model is 'provider/model', split and return (model, provider_hint)."""
-        if "/" in model_spec and not model_spec.startswith("@") and not model_spec.startswith("hf:"):
+        has_provider = "/" in model_spec
+        is_special = model_spec.startswith("@") or model_spec.startswith("hf:")
+        if has_provider and not is_special:
             parts = model_spec.split("/", 1)
             if parts[0] in self._providers:
                 return parts[1], parts[0]
@@ -112,48 +122,57 @@ class MultiProviderRouter:
             if not provider:
                 continue
 
-            effective_model = resolved_model or provider.config.models[0]
+            models_to_try = [resolved_model] if resolved_model else list(provider.config.models)
+            if not models_to_try:
+                continue
 
-            for attempt in range(self.config.llm.max_retries + 1):
-                try:
-                    result = await provider.chat(
-                        messages,
-                        model=effective_model,
-                        temperature=temperature,
-                        max_tokens=max_tokens,
-                        **kwargs,
-                    )
-                    return result
-
-                except httpx.HTTPStatusError as e:
-                    last_error = e
-                    if e.response.status_code == 429:
-                        logger.info(
-                            "Rate limited on %s/%s, trying next provider...",
-                            provider_name, effective_model,
+            for model_attempt, effective_model in enumerate(models_to_try):
+                for attempt in range(self.config.llm.max_retries + 1):
+                    try:
+                        result = await provider.chat(
+                            messages,
+                            model=effective_model,
+                            temperature=temperature,
+                            max_tokens=max_tokens,
+                            **kwargs,
                         )
-                        await asyncio.sleep(0.5)
-                        break  # try next provider
-                    elif e.response.status_code >= 500 and attempt < self.config.llm.max_retries:
-                        logger.info("Server error on %s, retrying...", provider_name)
-                        await asyncio.sleep(1)
-                        continue
-                    else:
+                        return result
+
+                    except httpx.HTTPStatusError as e:
+                        last_error = e
+                        if e.response.status_code == 429:
+                            wait = 2 ** (attempt + model_attempt + 1)
+                            logger.info(
+                                "Rate limited on %s/%s, retrying in %ds...",
+                                provider_name, effective_model, wait,
+                            )
+                            await asyncio.sleep(wait)
+                            continue  # retry same model
+                        is_server_error = e.response.status_code >= 500
+                        if is_server_error and attempt < self.config.llm.max_retries:
+                            logger.info("Server error on %s, retrying...", provider_name)
+                            await asyncio.sleep(1)
+                            continue
+                        else:
+                            logger.warning(
+                                "HTTP %d on %s/%s: %s",
+                                e.response.status_code, provider_name, effective_model,
+                                e.response.text[:200],
+                            )
+                            break  # try next model
+
+                    except httpx.TimeoutException:
+                        last_error = TimeoutError(f"Timeout on {provider_name}")
+                        logger.info("Timeout on %s, trying next provider...", provider_name)
+                        break
+
+                    except httpx.RequestError as e:
+                        last_error = e
                         logger.warning(
-                            "HTTP %d on %s: %s",
-                            e.response.status_code, provider_name, e.response.text[:200],
+                            "Connection error on %s/%s: %s",
+                            provider_name, effective_model, e,
                         )
-                        break  # try next provider
-
-                except httpx.TimeoutException:
-                    last_error = TimeoutError(f"Timeout on {provider_name}")
-                    logger.info("Timeout on %s, trying next provider...", provider_name)
-                    break
-
-                except httpx.RequestError as e:
-                    last_error = e
-                    logger.warning("Connection error on %s: %s", provider_name, e)
-                    break
+                        break  # try next model
 
         raise RuntimeError(
             f"All providers exhausted. Last error: {last_error}"

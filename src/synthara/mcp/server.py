@@ -10,10 +10,10 @@ import asyncio
 import json
 import sys
 
+from synthara.agents.orchestrator import Orchestrator
 from synthara.core.config import load_config
 from synthara.core.llm import LLMClient
 from synthara.memory.store import MemoryStore
-from synthara.agents.orchestrator import Orchestrator
 
 
 def handle_request(request: dict) -> dict:

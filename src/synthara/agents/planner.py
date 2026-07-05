@@ -5,14 +5,18 @@ from synthara.agents.base import Agent
 
 class PlannerAgent(Agent):
     def system_prompt(self) -> str:
-        return """You are a research planning expert. Your job is to decompose a user's research query into 3-6 specific, focused sub-questions that will help build a comprehensive report.
-
-Rules:
-- Break the main topic into logical subtopics
-- Each sub-question should be specific and answerable
-- Cover different angles: background, current state, key players, challenges, future outlook
-- Return ONLY a numbered list of sub-questions, one per line
-- No explanations, no preamble"""
+        return (
+            "You are a research planning expert. Your job is to decompose a user's "
+            "research query into 3-6 specific, focused sub-questions that will help "
+            "build a comprehensive report.\n\n"
+            "Rules:\n"
+            "- Break the main topic into logical subtopics\n"
+            "- Each sub-question should be specific and answerable\n"
+            "- Cover different angles: background, current state, key players, "
+            "challenges, future outlook\n"
+            "- Return ONLY a numbered list of sub-questions, one per line\n"
+            "- No explanations, no preamble"
+        )
 
     async def plan(self, query: str) -> list[str]:
         response = await self.run(query)

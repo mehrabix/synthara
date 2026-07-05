@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import json
 import sqlite3
 import threading
-from pathlib import Path
 
-from synthara.core.models import Message, Report, ReportSection, Session, Source
+from synthara.core.models import Message, Report, Session
 
 
 class MemoryStore:

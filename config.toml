@@ -10,9 +10,9 @@ request_timeout = 60
   base_url = "https://openrouter.ai/api/v1"
   api_key_env = "OPENROUTER_API_KEY"
   models = [
-    "mistralai/mistral-7b-instruct:free",
-    "meta-llama/llama-3-8b-instruct:free",
-    "openai/gpt-oss-20b:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "poolside/laguna-xs-2.1:free",
   ]
   priority = 1
 
@@ -117,10 +117,10 @@ request_timeout = 60
 
 [agents]
 # Per-agent model selection (model_name, or "provider/model_name")
-planner_model = "mistral-small-latest"
-researcher_model = "mistralai/mistral-7b-instruct:free"
-writer_model = "meta-llama/llama-3-8b-instruct:free"
-editor_model = "llama-3.3-70b-versatile"
+planner_model = "google/gemma-4-26b-a4b-it:free"
+researcher_model = "google/gemma-4-26b-a4b-it:free"
+writer_model = "nvidia/nemotron-3-super-120b-a12b:free"
+editor_model = "nvidia/nemotron-3-super-120b-a12b:free"
 
 [research]
 max_sources_per_query = 5
