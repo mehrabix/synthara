@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "synthara-tools": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "-m", "synthara.mcp.server"],
+      "description": "MCP server providing Synthara agent tools for AI assistants",
+      "env": {
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+        "SYNTHARA_CONFIG": "${workspaceFolder}/config.toml"
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+[llm]
+provider = "openrouter"
+api_key_env = "OPENROUTER_API_KEY"
+base_url = "https://openrouter.ai/api/v1"
+
+# Fallback models (in order of preference)
+models = [
+    "mistralai/mistral-7b-instruct",
+    "meta-llama/llama-3-8b-instruct",
+    "google/gemini-flash-1.5",
+]
+max_retries = 3
+request_timeout = 60
+
+[agents]
+planner_model = "mistralai/mistral-7b-instruct"
+researcher_model = "mistralai/mistral-7b-instruct"
+writer_model = "meta-llama/llama-3-8b-instruct"
+editor_model = "meta-llama/llama-3-8b-instruct"
+
+[research]
+max_sources_per_query = 5
+search_language = "en"
+
+[memory]
+db_path = "synthara.db"
