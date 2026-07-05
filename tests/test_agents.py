@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from synthara.core.config import AppConfig, LLMConfig
+from synthara.core.config import AppConfig
 from synthara.core.models import ResearchFindings, Source
 
 
@@ -74,8 +74,12 @@ async def test_editor_polishes_content():
 def test_config_loading(tmp_path):
     config_content = """
 [llm]
-models = ["test-model"]
 max_retries = 5
+[llm.providers.openrouter]
+base_url = "https://test.example.com/v1"
+api_key_env = "TEST_KEY"
+models = ["test-model"]
+priority = 1
 
 [agents]
 planner_model = "test-planner"
@@ -85,16 +89,18 @@ planner_model = "test-planner"
 
     from synthara.core.config import load_config
     config = load_config(str(config_file))
-    assert config.llm.models == ["test-model"]
+    assert "openrouter" in config.llm.providers
+    assert config.llm.providers["openrouter"].models == ["test-model"]
     assert config.llm.max_retries == 5
     assert config.agents.planner_model == "test-planner"
 
 
 @pytest.mark.asyncio
-async def test_llm_client_retry_on_failure():
+async def test_llm_client_no_providers():
+    from synthara.core.config import AppConfig
     from synthara.core.llm import LLMClient
 
-    config = LLMConfig(models=["test-model"])
-    # Key error expected — no API key set
-    with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
-        LLMClient(config)
+    config = AppConfig()
+    client = LLMClient(config)
+    with pytest.raises(RuntimeError, match="No LLM providers configured"):
+        await client.chat([{"role": "user", "content": "hi"}])

@@ -43,28 +43,37 @@ Synthara is an agentic AI system that orchestrates **free OpenRouter models** th
 | Component           | Technology                                |
 |---------------------|-------------------------------------------|
 | Language            | Python 3.12+                              |
-| LLM Provider        | OpenRouter API (free: Mistral 7B, Llama 3, Gemini Flash, DeepSeek) |
+| LLM Providers       | 12+ free providers with auto-failover     |
 | Agent Orchestration | Custom agent graph (no heavy framework)   |
 | CLI                 | Rich (beautiful terminal formatting)      |
 | Dashboard           | Streamlit                                 |
 | Storage             | SQLite (via sqlite3)                      |
 | Web Research        | duckduckgo_search + wikipedia-api         |
-| PDF Reports         | WeasyPrint / ReportLab                    |
 | Async               | httpx + asyncio (for parallel agents)     |
 | Packaging           | uv / pip + pyproject.toml                 |
 
 ---
 
-## Free OpenRouter Models for Testing
+## Free LLM Providers (All Supported)
 
-| Model ID                    | Free Tier Limit            |
-|-----------------------------|----------------------------|
-| `mistralai/mistral-7b-instruct` | 10 req/min               |
-| `meta-llama/llama-3-8b-instruct` | 20 req/min             |
-| `google/gemini-flash-1.5`   | 10 req/min (via OpenRouter) |
-| `deepseek/deepseek-chat`    | 20 req/min                 |
+Synthara's `MultiProviderRouter` tries providers in priority order. If one rate-limits, times out, or errors, it automatically falls back to the next.
 
-Configurable via `config.toml` — swap models without code changes.
+| # | Provider | Base URL | Free Models | Get Key | Priority |
+|---|----------|----------|-------------|---------|----------|
+| 1 | **OpenRouter** | `openrouter.ai/api/v1` | 28+ free (`:free`) models | [Get key](https://openrouter.ai/keys) | 1 |
+| 2 | **Groq** | `api.groq.com/openai/v1` | Llama 3.3 70B, Llama 4, Qwen3 | [Get key](https://console.groq.com/keys) | 2 |
+| 3 | **Cerebras** | `api.cerebras.ai/v1` | Llama 3.1 8B, Llama 3.3 70B | [Get key](https://cloud.cerebras.ai/) | 3 |
+| 4 | **Google Gemini** | `generativelanguage.googleapis.com/v1beta/openai` | Gemini 2.5 Flash, 2.0 Flash | [Get key](https://aistudio.google.com/apikey) | 4 |
+| 5 | **Mistral** | `api.mistral.ai/v1` | Mistral Small 3.1, Ministral 8B | [Get key](https://console.mistral.ai/) | 5 |
+| 6 | **GitHub Models** | `models.github.ai/inference` | GPT-4o-mini, Llama 3.1 | [Get key](https://github.com/marketplace/models) | 6 |
+| 7 | **Cloudflare** | `api.cloudflare.com/.../ai/v1` | Llama 3.3 70B, Mistral 7B | [Get key](https://dash.cloudflare.com) | 7 |
+| 8 | **NVIDIA NIM** | `integrate.api.nvidia.com/v1` | Llama 3.3 70B, Nemotron | [Get key](https://build.nvidia.com) | 8 |
+| 9 | **HuggingFace** | `router.huggingface.co/v1` | Llama 3.3, Qwen2.5 | [Get key](https://huggingface.co/settings/tokens) | 9 |
+| 10 | **SambaNova** | `api.sambanova.ai/v1` | Llama 3.1 405B | [Get key](https://cloud.sambanova.ai) | 10 |
+| 11 | **DeepSeek** | `api.deepseek.com` | DeepSeek Chat | [Get key](https://platform.deepseek.com) | 11 |
+| 12 | **Cohere** | `api.cohere.com/v1` | Command R+ | [Get key](https://dashboard.cohere.com) | 12 |
+
+**Need just one key to start.** Set `OPENROUTER_API_KEY` and you're live. Add more keys and the router auto-balances across them.
 
 ---
 

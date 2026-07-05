@@ -28,7 +28,7 @@ config = load_config()
 memory = MemoryStore(config.memory.db_path)
 
 if "llm" not in st.session_state:
-    st.session_state.llm = LLMClient(config.llm)
+    st.session_state.llm = LLMClient(config)
 if "renderer" not in st.session_state:
     st.session_state.renderer = CLIRenderer()
 

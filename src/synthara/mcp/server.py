@@ -50,7 +50,7 @@ def handle_request(request: dict) -> dict:
                 return {"error": "Missing 'query' argument"}
 
             config = load_config()
-            llm = LLMClient(config.llm)
+            llm = LLMClient(config)
             memory = MemoryStore(config.memory.db_path)
             orchestrator = Orchestrator(config=config, llm=llm, memory=memory)
 

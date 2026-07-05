@@ -31,7 +31,7 @@ async def _run_research(query: str, output: Path | None, model: str | None):
         for agent_name in ["planner", "researcher", "writer", "editor"]:
             setattr(config.agents, f"{agent_name}_model", model)
 
-    llm = LLMClient(config.llm)
+    llm = LLMClient(config)
     memory = MemoryStore(config.memory.db_path)
     renderer = CLIRenderer()
 

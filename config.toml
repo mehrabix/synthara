@@ -1,22 +1,126 @@
 [llm]
-provider = "openrouter"
-api_key_env = "OPENROUTER_API_KEY"
-base_url = "https://openrouter.ai/api/v1"
-
-# Fallback models (in order of preference)
-models = [
-    "mistralai/mistral-7b-instruct",
-    "meta-llama/llama-3-8b-instruct",
-    "google/gemini-flash-1.5",
-]
-max_retries = 3
+# Multi-provider router with automatic failover.
+# Providers tried in order; if one rate-limits or errors, the next takes over.
+routing_strategy = "priority"  # "priority" | "round_robin"
+max_retries = 2
 request_timeout = 60
 
+[llm.providers]
+  [llm.providers.openrouter]
+  base_url = "https://openrouter.ai/api/v1"
+  api_key_env = "OPENROUTER_API_KEY"
+  models = [
+    "mistralai/mistral-7b-instruct:free",
+    "meta-llama/llama-3-8b-instruct:free",
+    "openai/gpt-oss-20b:free",
+  ]
+  priority = 1
+
+  [llm.providers.groq]
+  base_url = "https://api.groq.com/openai/v1"
+  api_key_env = "GROQ_API_KEY"
+  models = [
+    "llama-3.3-70b-versatile",
+    "llama-4-scout-17b-16e-instruct",
+    "llama-4-maverick-17b-128e-instruct",
+  ]
+  priority = 2
+
+  [llm.providers.cerebras]
+  base_url = "https://api.cerebras.ai/v1"
+  api_key_env = "CEREBRAS_API_KEY"
+  models = [
+    "llama3.1-8b",
+    "llama-3.3-70b",
+  ]
+  priority = 3
+
+  [llm.providers.gemini]
+  base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+  api_key_env = "GEMINI_API_KEY"
+  models = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+  ]
+  priority = 4
+
+  [llm.providers.mistral]
+  base_url = "https://api.mistral.ai/v1"
+  api_key_env = "MISTRAL_API_KEY"
+  models = [
+    "mistral-small-latest",
+    "ministral-8b-latest",
+  ]
+  priority = 5
+
+  [llm.providers.github]
+  base_url = "https://models.github.ai/inference"
+  api_key_env = "GITHUB_API_KEY"
+  models = [
+    "gpt-4o-mini",
+    "Meta-Llama-3.1-8B-Instruct",
+  ]
+  priority = 6
+
+  [llm.providers.cloudflare]
+  base_url = "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1"
+  api_key_env = "CLOUDFLARE_API_KEY"
+  models = [
+    "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "@hf/mistral/mistral-7b-instruct-v0.3",
+  ]
+  priority = 7
+
+  [llm.providers.nvidia]
+  base_url = "https://integrate.api.nvidia.com/v1"
+  api_key_env = "NVIDIA_API_KEY"
+  models = [
+    "meta/llama-3.3-70b-instruct",
+    "nvidia/llama-3.1-nemotron-70b-instruct",
+  ]
+  priority = 8
+
+  [llm.providers.huggingface]
+  base_url = "https://router.huggingface.co/v1"
+  api_key_env = "HF_API_KEY"
+  models = [
+    "meta-llama/Llama-3.3-70B-Instruct",
+    "Qwen/Qwen2.5-72B-Instruct",
+  ]
+  priority = 9
+
+  [llm.providers.sambanova]
+  base_url = "https://api.sambanova.ai/v1"
+  api_key_env = "SAMBANOVA_API_KEY"
+  models = [
+    "Meta-Llama-3.1-405B-Instruct",
+    "Meta-Llama-3.3-70B-Instruct",
+  ]
+  priority = 10
+
+  [llm.providers.deepseek]
+  base_url = "https://api.deepseek.com"
+  api_key_env = "DEEPSEEK_API_KEY"
+  models = [
+    "deepseek-chat",
+  ]
+  priority = 11
+
+  [llm.providers.cohere]
+  base_url = "https://api.cohere.com/v1"
+  api_key_env = "COHERE_API_KEY"
+  models = [
+    "command-r-plus",
+    "command-r",
+  ]
+  priority = 12
+
 [agents]
-planner_model = "mistralai/mistral-7b-instruct"
-researcher_model = "mistralai/mistral-7b-instruct"
-writer_model = "meta-llama/llama-3-8b-instruct"
-editor_model = "meta-llama/llama-3-8b-instruct"
+# Per-agent model selection (model_name, or "provider/model_name")
+planner_model = "mistral-small-latest"
+researcher_model = "mistralai/mistral-7b-instruct:free"
+writer_model = "meta-llama/llama-3-8b-instruct:free"
+editor_model = "llama-3.3-70b-versatile"
 
 [research]
 max_sources_per_query = 5
